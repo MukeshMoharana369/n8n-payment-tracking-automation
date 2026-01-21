@@ -1,0 +1,914 @@
+{
+  "name": "Payment Tracking & Billing",
+  "nodes": [
+    {
+      "parameters": {
+        "sendTo": "={{ $json['Client Email'] }}",
+        "subject": "Upcoming Invoice Reminder",
+        "message": "=Hi {{ $json['Client Name'] }},\n\nJust a friendly heads-up that your payment of {{ $json.Amount }} is due in 3 days (on {{ $json['Due Date'] }}).\n\nThanks,\nYour Coach",
+        "options": {}
+      },
+      "id": "c1050611-df2e-47f0-96be-bb9c1b814a35",
+      "name": "Send Reminder (Upcoming)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        512,
+        784
+      ],
+      "webhookId": "c64a8431-9491-4b82-8974-fdae355b2dcf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wQEUChLr6p4FBnLg",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json['Client Email'] }}",
+        "subject": "Invoice Due Today",
+        "message": "=Hi {{ $json['Client Name'] }},\n\nThis is a reminder that your payment of {{ $json.Amount }} is due today.\n\nPlease settle this at your earliest convenience.\n\nThanks,\nYour Coach",
+        "options": {}
+      },
+      "id": "613e9a3f-deac-4871-977f-0f20ec506271",
+      "name": "Send Reminder (Due Today)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        736,
+        976
+      ],
+      "webhookId": "cdd875d2-8ffd-4e07-81ec-688ed4d2029e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wQEUChLr6p4FBnLg",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo",
+          "mode": "list",
+          "cachedResultName": "Payments_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "e10481da-01e4-411c-8b2f-8e2da58ce819",
+      "name": "Google Sheets: Read Rows1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -608,
+        1120
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Zgco6jw9Plu7dw1B",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json['Due Date'] }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "e62b7fe6-6e13-4a07-ae4e-082dcce79d40",
+      "name": "IF (DueDate Exists)1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json['Client Email'] }}",
+        "subject": "Action Required: Payment Overdue",
+        "message": "=Hi {{ $json['Client Name'] }},\n\nWe noticed we haven't received your payment of {{ $json.Amount }} which was due on {{ $json['Due Date'] }}.\n\nPlease settle this immediately to ensure continuous service.\n\nThanks,\nYour Coach",
+        "options": {}
+      },
+      "id": "e9152a29-a0d8-421d-9da0-68ea2e398da4",
+      "name": "Send Reminder (Overdue)1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        960,
+        1168
+      ],
+      "webhookId": "2cde8810-34b9-4a7b-8ec6-485189323037",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wQEUChLr6p4FBnLg",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cbd1b56d-72e9-4058-bdb1-ae1e460cc394",
+      "name": "Cron - Daily 09:1",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -832,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.Status }}",
+              "operation": "notEqual",
+              "value2": "paid"
+            }
+          ]
+        }
+      },
+      "id": "11eba16a-e67d-4cd0-8477-0fb70e0fe4ca",
+      "name": "IF (Status != paid)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const dueDate = new Date($json[\"Due Date\"]);\nconst today = new Date();\n\ndueDate.setHours(0, 0, 0, 0);\ntoday.setHours(0, 0, 0, 0);\n\nconst diffTime = dueDate - today;\nconst diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));\n\nreturn {\n  ...$json,\n  daysUntilDue: diffDays\n};\n"
+      },
+      "id": "c2e14d8a-a772-4a29-8828-4db321a7f288",
+      "name": "Code (Date Calculation)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        64,
+        1120
+      ],
+      "id": "1601b7f2-22f6-4ecf-a6cc-3331f55e69ce",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f9250613-5c8f-4369-bd97-63dc133adaf0",
+              "leftValue": "={{ $json.daysUntilDue }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            },
+            {
+              "id": "07de3bb8-1465-4cfb-86a2-4789d186cb57",
+              "leftValue": "={{ $json.daysUntilDue }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        288,
+        976
+      ],
+      "id": "679ce4ae-eefc-4aae-a8d1-a4aa8f3f6559",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f9250613-5c8f-4369-bd97-63dc133adaf0",
+              "leftValue": "={{ $json.daysUntilDue }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        512,
+        1072
+      ],
+      "id": "03e8bc9d-0920-459b-a207-ffc679e06381",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2ff2e321-1fe8-47e2-b076-179ea165bb18",
+              "leftValue": "={{ $json.daysUntilDue }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        736,
+        1168
+      ],
+      "id": "1d3e22d3-06eb-4f59-b8de-1fbe5649bab2",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo",
+          "mode": "list",
+          "cachedResultName": "Payments_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": 0,
+            "Client Name": "={{ $('Google Sheets: Read Rows1').item.json['Client Name'] }}",
+            "Last Reminder Sent": "={{ $now }}",
+            "daysUntilDue": "={{ $('Code (Date Calculation)').item.json.daysUntilDue }}",
+            "reminder ": "sent"
+          },
+          "matchingColumns": [
+            "Client Name"
+          ],
+          "schema": [
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Email",
+              "displayName": "Client Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Plan Type",
+              "displayName": "Plan Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Reminder Sent",
+              "displayName": "Last Reminder Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "daysUntilDue",
+              "displayName": "daysUntilDue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reminder ",
+              "displayName": "reminder ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "e9aeea00-d8b5-4520-974f-afb4e4af0ac0",
+      "name": "Google Sheets: Update Row (Memory)1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        736,
+        784
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Zgco6jw9Plu7dw1B",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo",
+          "mode": "list",
+          "cachedResultName": "Payments_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": 0,
+            "Client Name": "={{ $('Google Sheets: Read Rows1').item.json['Client Name'] }}",
+            "Last Reminder Sent": "={{ $now }}",
+            "daysUntilDue": "={{ $('Code (Date Calculation)').item.json.daysUntilDue }}",
+            "reminder ": "sent"
+          },
+          "matchingColumns": [
+            "Client Name"
+          ],
+          "schema": [
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Email",
+              "displayName": "Client Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Plan Type",
+              "displayName": "Plan Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Reminder Sent",
+              "displayName": "Last Reminder Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "daysUntilDue",
+              "displayName": "daysUntilDue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reminder ",
+              "displayName": "reminder ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "e9d94a85-d279-4c0e-9d8b-c14f583a58ef",
+      "name": "Google Sheets: Update Row (Memory)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        960,
+        976
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Zgco6jw9Plu7dw1B",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo",
+          "mode": "list",
+          "cachedResultName": "Payments_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SvYDxs3uCmAcH9wH8tdEUsL0_hb60yYOcfhCAV8Yjqo/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": 0,
+            "Client Name": "={{ $('Google Sheets: Read Rows1').item.json['Client Name'] }}",
+            "Last Reminder Sent": "={{ $now }}",
+            "daysUntilDue": "={{ $('Code (Date Calculation)').item.json.daysUntilDue }}",
+            "reminder ": "sent"
+          },
+          "matchingColumns": [
+            "Client Name"
+          ],
+          "schema": [
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Email",
+              "displayName": "Client Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Plan Type",
+              "displayName": "Plan Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Reminder Sent",
+              "displayName": "Last Reminder Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "daysUntilDue",
+              "displayName": "daysUntilDue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reminder ",
+              "displayName": "reminder ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "57f98a61-7a2b-4b2f-843d-96a11ad810e6",
+      "name": "Google Sheets: Update Row (Memory)2",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1168,
+        1168
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Zgco6jw9Plu7dw1B",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Send Reminder (Upcoming)": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Update Row (Memory)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reminder (Due Today)": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Update Row (Memory)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Read Rows1": {
+      "main": [
+        [
+          {
+            "node": "IF (Status != paid)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF (DueDate Exists)1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron - Daily 09:1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Read Rows1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF (Status != paid)": {
+      "main": [
+        [
+          {
+            "node": "IF (DueDate Exists)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code (Date Calculation)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reminder (Overdue)1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Update Row (Memory)2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code (Date Calculation)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send Reminder (Upcoming)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send Reminder (Due Today)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Send Reminder (Overdue)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "2d0d498e-c539-4c20-827a-02b4a12ec0a4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "817537ccf45e86df6628493ea2633ffbe1226f94f1007e5cee39998aedda52c5"
+  },
+  "id": "vW0UAn21DIs-ESGd6rTrd",
+  "tags": []
+}
